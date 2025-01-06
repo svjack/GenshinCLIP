@@ -34,7 +34,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # tokenizer = get_tokenizer(model_name)
 
 # or load from hub
-model, preprocess = create_model_from_pretrained('hf-hub:mrzjy/GenshinImpact-5.0-ViT-SO400M-14-SigLIP-384')
+model, preprocess = create_model_from_pretrained('hf-hub:mrzjy/GenshinImpact-5.0-ViT-SO400M-14-SigLIP-384', device=device)
 tokenizer = get_tokenizer('hf-hub:mrzjy/GenshinImpact-5.0-ViT-SO400M-14-SigLIP-384')
 
 # image
