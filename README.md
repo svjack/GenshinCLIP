@@ -3,6 +3,67 @@ Simple open-sourced CLIP models fine-tuned on Genshin Impact's image-text pairs.
 
 The models are far from being perfect, but could still offer some better text-image matching performance in some Genshin Impact scenarios.
 
+#### Installtation
+```bash
+sudo apt-get update && sudo apt-get install cbm ffmpeg git-lfs 
+
+conda create -n py310 python=3.10 && conda activate py310
+pip install ipykernel
+python -m ipykernel install --user --name py310 --display-name "py310"
+
+pip install open-clip-torch torch torchvision
+```
+
+#### 5.0 QingCe Demp
+```python
+import torch
+import torch.nn.functional as F
+from PIL import Image
+import requests
+from open_clip import create_model_from_pretrained, get_tokenizer
+
+def preprocess_text(string):
+    return "Genshin Impact\n" + string
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+# load checkpoint from local path
+# model_path = "path/to/open_clip_pytorch_model.bin"
+# model_name = "ViT-SO400M-14-SigLIP-384"
+# model, preprocess = create_model_from_pretrained(model_name=model_name, pretrained=model_path, device=device)
+# tokenizer = get_tokenizer(model_name)
+
+# or load from hub
+model, preprocess = create_model_from_pretrained('hf-hub:mrzjy/GenshinImpact-5.0-ViT-SO400M-14-SigLIP-384')
+tokenizer = get_tokenizer('hf-hub:mrzjy/GenshinImpact-5.0-ViT-SO400M-14-SigLIP-384')
+
+# image
+image_url = "https://static.wikia.nocookie.net/gensin-impact/images/3/33/Qingce_Village.png"
+image = Image.open(requests.get(image_url, stream=True).raw)
+image = preprocess(image).unsqueeze(0).to(device)
+
+# text choices
+labels = [
+    "This is an area of Liyue",
+    "This is an area of Mondstadt",
+    "This is an area of Sumeru",
+    "This is Qingce Village"
+]
+labels = [preprocess_text(l) for l in labels]
+text = tokenizer(labels, context_length=model.context_length).to(device)
+with torch.autocast(device_type=device.type):
+    with torch.no_grad():
+        image_features = model.encode_image(image)
+        text_features = model.encode_text(text)
+        image_features = F.normalize(image_features, dim=-1)
+        image_features = F.normalize(image_features, dim=-1)
+        text_features = F.normalize(text_features, dim=-1)
+        text_probs = torch.sigmoid(image_features @ text_features.T * model.logit_scale.exp() + model.logit_bias)
+        scores = [f"{s:.3f}" for i, s in enumerate(text_probs.tolist()[0])]
+        print(scores)
+
+```
+
 ## Model Link
 
 | Dataset          | Model Name                                    | Link                                                                                      | Checkpoint Size | Val Loss |
